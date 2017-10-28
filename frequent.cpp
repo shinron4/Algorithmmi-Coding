@@ -1,26 +1,14 @@
 #include <iostream>
-#include <cmath> 
-#include <vector>
-#include <algorithm>
-
-#define MP make_pair
-#define PB push_back
-#define F first 
-#define S second
-#define newline cout << "\n"
-#define space cout << " "
-#define IN cin >> 
-#define OUT cout << 
-#define fastIO ios_base::sync_with_stdio(false); cin.tie(NULL);
+#include <climits>
 
 using namespace std;
 
-int a[100001];
+int t[100001];
 
 int get(int i){
-	int sum = 0; 
+	int sum = 0;
 	while(i > 0){
-		sum += a[i];
+		sum += t[i];
 		i -= i & -i;
 	}
 	return sum;
@@ -28,77 +16,71 @@ int get(int i){
 
 void update(int n, int i, int val){
 	while(i <= n){
-		a[i] += val;
+		t[i] += val;
 		i += i & -i;
 	}
 }
 
-vector< pair<int, int> > t(2 * 100000), ft;
+int bsearch(int i, int j, int v){
+	int mid;
+	while(i < j){
+		mid = (i + j) >> 1;
+		if(v <= get(mid)) j = mid;
+		else i = mid + 1;
+	}
+	return i;
+}
 
-void build(int n){
-	for(int i = n - 1; i > 0; i--) t[i] = t[i << 1].F > t[i << 1 | 1].F ? t[i << 1] : t[i << 1 | 1];
+int st[2 * 100000];
+
+void build(int a[], int n){
+	for(int i = n; i < 2 * n; i++) st[i] = a[i - n];
+	for(int i = n - 1; i > 0; i--){
+		st[i] = max(st[i << 1], st[i << 1 | 1]);
+	}
 }
 
 int query(int n, int l, int r){
-	int lmax, rmax;
-	lmax = rmax = -1;
+	int res = -INT_MAX;
 	for(l += n - 1, r += n - 1; l < r; l >>= 1, r >>= 1){
-		if(l & 1){
-			lmax = t[l].F > lmax ? t[l].F : lmax;
-			l++;
-		}
-		if(r & 1){
-			r--;
-			rmax = t[r].F > rmax ? t[r].F : rmax;
-		}
+		if(l & 1) res = max(st[l++], res);
+		if(r & 1) res = max(st[--r], res);
 	}
-	return rmax > lmax ? rmax : lmax;
+	return res;
 }
 
 int main(){
-	fastIO
-	int n, q, x, y, z, f, f2;
+	int n, q, a[100000];
 	while(1){
-		IN n;
-		if(!n) break;
-		IN q;
-		x = -1000000;
+		cin >> n;
+		if(n == 0) break;
+		cin >> q;
+		int k = 0, x, y, f;
+		cin >> x;
 		f = 1;
-		z = 0;
-		for(int j = 1; j <= n; j++){
-			IN y;
+		for(int i = 1; i < n; i++){
+			cin >> y;
 			if(x != y){
-				ft.PB(MP(f, z));
-				f = 1;
-				update(n, j, 1);
+				a[k++] = f;
+				f = 1; 
 				x = y;
-				z = j;
 			}
 			else f++;
 		}
-		ft.PB(MP(f, z));
-		for(int j = z = ft.size() - 1; j <= 2 * z - 1; j++) t[j] = ft[j - z + 1];
-		build(z);
-		for(int j = 0; j < q; j++){
-			int l, r;
-			IN x; IN y;
-			l = get(x);
-			r = get(y);
-			if(l < r){
-				f = query(z, l + 1, r);
-				f2 = ft[l].S + ft[l].F - x;
-				f = f2 > f ? f2 : f;
-				f2 = y - ft[r].S + 1;
-				f = f2 > f ? f2 : f;
-				OUT f;
-			}
-			else{
-				OUT y - x + 1;
-			}
-			newline;
+		a[k++] = f;		
+		for(int i = 0; i < k; i++) update(k, i + 1, a[i]);
+		build(a, k);
+		for(int i = 0; i < q; i++){
+			int p, q, l, r, ma = -1;
+			cin >> p >> q;
+			l = bsearch(1, k, p);
+			r = bsearch(1, k, q);
+			if(l == r) ma = q - p + 1;
+			else ma = max(get(l) - p + 1, q - get(r - 1));
+			if(r - l - 1 > 0) ma = max(ma, query(k, l + 1, r));
+			cout << ma;
+			cout << "\n";
 		}
-		for(int j = 1; j < ft.size(); j++) update(n, ft[j].S, -1);
-		ft.clear();
+		for(int i = 1; i <= k; i++) t[i] = 0;
 	}
-	return 0;
 }
